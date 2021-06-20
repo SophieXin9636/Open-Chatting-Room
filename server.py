@@ -1,37 +1,70 @@
 import socket
 import logging
 
-def main():
-	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+# functions#############################################################################
+##global var
+serverIp = "127.0.0.1"
+serverPort = 9999
+saddr = (serverIp, serverPort)
+serverSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+serverOnline = 0
+clientInfo = {}  # dict{address:name}
 
-	addr = ('127.0.0.1', 9999)
-	s.bind(addr)  # 繫結地址和埠
+def server_online():
+    global saddr
+    global serverOnline
+    global serverSocket
+    '''UDP socket'''
+    try:
+        serverSocket.bind(saddr)
+    except:
+        logging.warning("UDP Server(%s:%s) online failed.", saddr[0], saddr[1])
 
-	logging.info('UDP Server on %s:%s...', addr[0], addr[1])
+    logging.info("UDP Server(%s:%s) online succeeded.", saddr[0], saddr[1])
+    print("UDP Server(%s:%s) online succeeded." % (saddr[0], saddr[1]))
 
-	user = {}  # 存放字典{addr:name}
-	while True:
-		try:
-			data, addr = s.recvfrom(1024)  # 等待接收客戶端訊息存放在2個變數data和addr裡
-			if not addr in user:  # 如果addr不在user字典裡則執行以下程式碼
-				for address in user:  # 從user遍歷資料出來address
-					s.sendto(data + ' 進入聊天室...'.encode('utf-8'), address)  # 傳送user字典的data和address到客戶端
-				user[addr] = data.decode('utf-8')  # 接收的訊息解碼成utf-8並存在字典user裡,鍵名定義為addr
-				continue  # 如果addr在user字典裡，跳過本次迴圈
+    serverOnline = 1
+    while (serverOnline):
+        try:
+            boardcast_message=server_running()
+            print(boardcast_message)
+        except:
+            logging.info("UDP Server(%s:%s) runtime failed.",saddr[0],saddr[1])
 
-			if 'exit' in data.decode('utf-8'):
-				name = user[addr]   #user字典addr鍵對應的值賦值給變數name
-				user.pop(addr)	  #刪除user裡的addr
-				for address in user:	#從user取出address
-					s.sendto((name + ' 離開了聊天室...').encode(), address)	 #傳送name和address到客戶端
-			else:   
-				print('"%s" from %s:%s' %(data.decode('utf-8'), addr[0], addr[1]))  
-				for address in user:	#從user遍歷出address
-					if address != addr:  #address不等於addr時間執行下面的程式碼
-						s.sendto(data, address)
+def server_running():
+    global serverSocket
+    global serverOnline
+    global clientInfo
 
-		except ConnectionResetError:
-			logging.warning('Someone left unexcept.')
+    data, caddr = serverSocket.recvfrom(1024)
+    data = data.decode("utf-8")
+
+    if (caddr not in clientInfo):
+        '''login phase: data->name'''
+        name = data
+        clientInfo[caddr] = name
+        bm = name + " has entered the chatting room."
+    else:
+        '''chatting phase: data->msg'''
+        name = clientInfo[caddr]
+        # logout: exit
+        if "exit" in data:
+            clientInfo.pop(caddr)
+            bm = name + " has left the chatting room."
+        # normal case
+        else:
+            bm = name + ": " + data
+    boardcasting(bm, caddr)
+    return bm
+
+def boardcasting(msg, source):
+    global serverSocket
+    global saddr
+    global clientInfo
+    for address in clientInfo:
+        serverSocket.sendto(msg.encode("utf-8"), address)
+
+#######################################################################################
 
 if __name__ == '__main__':
-	main()
+    server_online()
