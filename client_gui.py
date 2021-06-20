@@ -12,7 +12,11 @@ clientName = "Sophie"
 msg_buf = []
 msg = ""
 loginFlag = 0
-saddr = ("127.0.0.1", 9999)
+HOST = "127.0.0.1"
+UDP_PORT = 9999
+TCP_PORT = 10000
+udp_srv_addr = (HOST, UDP_PORT)
+tcp_srv_addr = (HOST, TCP_PORT)
 
 def main():
 	global window, size, chat
@@ -25,13 +29,15 @@ def main():
 	client_online()
 
 def client_online():
-	global saddr, window, chat, clientSocket
+	global udp_srv_addr, window, chat, clientSocket
 	'''UDP socket'''
 	clientSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 	'''thread creation'''
-	tread = threading.Thread(target=chat.recv, args=(clientSocket, saddr), daemon=True)
-	#twrite = threading.Thread(target=chat.send, args=(clientSocket, saddr))
+	tread = threading.Thread(target=chat.recv, args=(clientSocket, udp_srv_addr), daemon=True)
+	treadFile = threading.Thread(target=chat.recvFile, daemon=True)
+	#twrite = threading.Thread(target=chat.send, args=(clientSocket, udp_srv_addr))
 	tread.start()
+	treadFile.start()
 	#twrite.start()
 	window.mainloop()
 	#twrite.join()
@@ -62,6 +68,9 @@ class ChatRoom():
 		self.msg_input_field = tk.Text(self.bottom_frame, height=5)
 		self.setupUI()
 
+		self.file_srv_skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		self.file_srv_skt.connect(tcp_srv_addr)
+
 	def setupUI(self):
 		self.top_frame.pack()
 		self.bottom_frame.pack(side=tk.BOTTOM)
@@ -73,7 +82,7 @@ class ChatRoom():
 
 	# 建立 "送出" 訊息的按鈕 或按下 enter 即傳送
 	def getMsgInput(self, event=None):
-		global msg_buf, clientName, clientSocket, saddr
+		global msg_buf, clientName, clientSocket, udp_srv_addr
 
 		if(event == None):
 			text = self.msg_input_field.get(1.0, tk.END+"-1c")
@@ -86,7 +95,7 @@ class ChatRoom():
 			self.listbox.see(tk.END) # auto scroll to the latest msg
 			#self.listbox.insert(tk.END, msg)
 			self.msg_input_field.delete("1.0","end") # clear
-			clientSocket.sendto(text.encode('utf-8'), saddr)
+			clientSocket.sendto(text.encode('utf-8'), udp_srv_addr)
 			return msg
 		else:
 			return ""
@@ -101,27 +110,34 @@ class ChatRoom():
 				msg_buf.append(msg)
 				self.listbox.see(tk.END) # auto scroll to the latest msg
 				self.listbox.insert(tk.END, msg.decode('utf-8'))
-				pass
-				#print(data.decode('utf-8'))
+
+	def recvFile(self):
+		filename = self.file_srv_skt.recv(1024)
+		f = open(filename, 'wb')
+		buf = self.file_srv_skt.recv(1024)
+		while buf:
+			f.write(buf)
+			buf = self.file_srv_skt.recv(1024)
+		f.close()
 
 	def clickSelectFile(self):
 		filename = filedialog.askopenfilename(initialdir="/", title="Select file", filetypes=(("jpeg files","*.jpg"),("all files","*.*")))
-		print(filename)
+		self.sendFile(filename)
 
-	"""
-	def send(self, sock, addr):
-		global loginFlag, clientName
-		while True:
-			string = self.btn_read.invoke()
-			#print(len(string), string, sep=".")
-			if(string != ""):
-				message = clientName + ' : ' + string
-				print(message)
-				sock.sendto(message.encode('utf-8'), addr)
-				'''logout phase'''
-				if string.lower() == 'exit':
-					break
-	"""
+	def sendFile(self, filename):
+		# filename (max string size is 100)
+		filename_msg = filename +" "+ (99-len(filename))*'\0'
+		self.file_srv_skt.send(filename_msg.encode('utf-8'))
+
+		# filesize (max string size is 10)
+		f = open(filename, "rb")
+		buf = f.read()
+		file_size = len(buf)
+		file_size_msg = "0"*(10-len(buf)) + str(file_size)
+		self.file_srv_skt.send(file_size_msg.encode('utf-8'))
+
+		# file
+		self.file_srv_skt.send(buf)
 
 if __name__ == '__main__':
 	clientName = input("Welcome to the chatroom, please enter your name first: ")

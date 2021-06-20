@@ -5,8 +5,11 @@ Python - GUI Programming (Tkinter)
 * [參考](https://www.itbook5.com/2019/02/10638/#ttk-widgets)
 
 ## 目前問題
-> [time=6/20 21:36]
+> [time=6.20 21:36]
 目前按鈕無法弄上圖片"img/files.png" (目前沒找到原因)，這個 icon 要用來當「選擇檔案」的按鈕
+
+> [time=6.21 03:01]
+TCP Server 傳輸檔案可傳，目前有一點點小 bug 尚未完成除錯
 
 ## chatroom
 https://shengyu7697.github.io/python-chatroom/
@@ -27,3 +30,17 @@ Button, Checkbutton, Entry, Frame,Label, LabelFrame, Menubutton, PanedWindow,Rad
 	* https://www.tutorialspoint.com/python/tk_listbox.htm
 * PanedWindow():
 	* https://www.twblogs.net/a/5ca0b67dbd9eee5b1a069ea6
+
+## 架構 (Architecture)
+本專案使用的是 Client-Server 架構，有多個 client 端與兩個 Server 端，兩個 Server 各司其職，一個為 TCP Server，一個為 UDP Server。
+
+### TCP Server
+* 負責傳收檔案 (Undone)
+* 傳送貼圖 (TODO)
+* 傳送音訊 (TODO)
+
+
+### UDP Server
+* 負責傳收、廣播訊息
+
+
