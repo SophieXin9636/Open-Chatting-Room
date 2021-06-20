@@ -4,6 +4,10 @@ Python - GUI Programming (Tkinter)
 * [教學文件](https://www.tutorialspoint.com/python/python_gui_programming.htm)
 * [參考](https://www.itbook5.com/2019/02/10638/#ttk-widgets)
 
+## 目前問題
+> [time=6/20 21:36]
+目前按鈕無法弄上圖片"img/files.png" (目前沒找到原因)，這個 icon 要用來當「選擇檔案」的按鈕
+
 ## chatroom
 https://shengyu7697.github.io/python-chatroom/
 https://shengyu7697.github.io/python-tcp-socket/
