@@ -43,14 +43,14 @@ def server_running():
         '''login phase: data->name'''
         name = data
         clientInfo[caddr] = name
-        bm = "<System notification>" + name + " has entered the chatting room."
+        bm = "<System notification> " + name + " has entered the chatting room."
     else:
         '''chatting phase: data->msg'''
         name = clientInfo[caddr]
         # logout: exit
         if (data == "LOGOUTSIGNAL"):
             clientInfo.pop(caddr)
-            bm = "<System notification>" + name + " has left the chatting room."
+            bm = "<System notification> " + name + " has left the chatting room."
         # normal case
         else:
             bm = name + ": " + data
