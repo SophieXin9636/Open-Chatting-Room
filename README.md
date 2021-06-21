@@ -5,8 +5,12 @@ Python - GUI Programming (Tkinter)
 * [參考](https://www.itbook5.com/2019/02/10638/#ttk-widgets)
 
 ## 目前問題
-> [time=6.21 16:40]
-TCP Server 已完成檔案傳輸，但 client 端接收不到，尚未找到問題點
+> [time=6.21 18:59]
+無
+
+## 待完成
+* 傳送圖片之後顯示在聊天室上 (貼圖)
+* 貼圖素材
 
 
 ## chatroom
