@@ -47,6 +47,7 @@ def client_online():
 
     '''thread creation'''
     tread = threading.Thread(target=chat.recv, args=(clientSocket, saddr), daemon=True)
+    treadFile = threading.Thread(target=chat.recvFile, daemon=True)
     tread.start()
 
 def gettime():
@@ -95,6 +96,10 @@ class ChatRoom():
         self.button_logout = Button(self.bottom_frame, text="Logout", width=8, fg="#FFFFFF", bg="#AAAAAA", font=font_btn,
                                      command=self.logout)
 
+        # connect TCP Server
+        self.file_srv_skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		self.file_srv_skt.connect(tcp_srv_addr)
+        
         # pack widgets
         self.packUI()
 
@@ -152,11 +157,34 @@ class ChatRoom():
                 listitemcounter += 1
                 self.listbox.see(END)
 
+    def recvFile(self):
+		filename = self.file_srv_skt.recv(1024)
+		f = open(filename, 'wb')
+		buf = self.file_srv_skt.recv(1024)
+		while buf:
+			f.write(buf)
+			buf = self.file_srv_skt.recv(1024)
+		f.close()
+
     def browsefile(self):
         # get file path and name
         filename = askopenfilename(filetypes=[("image", ".jpg"), ("image", ".png")])
-        print(filename)
-        #self.sendFile(filename)
+        self.sendFile(filename)
+        
+    def sendFile(self, filename):
+		# filename (max string size is 100)
+		filename_msg = filename +" "+ (99-len(filename))*'\0'
+		self.file_srv_skt.send(filename_msg.encode('utf-8'))
+
+		# filesize (max string size is 10)
+		f = open(filename, "rb")
+		buf = f.read()
+		file_size = len(buf)
+		file_size_msg = "0"*(10-len(buf)) + str(file_size)
+		self.file_srv_skt.send(file_size_msg.encode('utf-8'))
+
+		# file
+		self.file_srv_skt.send(buf)
 
     def logout(self):
         global window
