@@ -52,6 +52,7 @@ def client_online(event=None):
     tread = threading.Thread(target=chat.recvMsg, args=(clientSocket, saddr), daemon=True)
     treadFile = threading.Thread(target=chat.recvFile, daemon=True)
     tread.start()
+    treadFile.start()
 
 def gettime():
     curtime = str(time.ctime(time.time())).split(" ")
@@ -165,42 +166,49 @@ class ChatRoom():
                 self.listbox.see(END)
 
     def recvFile(self):
+        global listitemcounter, currenttime
         while True:
-            name = self.file_srv_skt.recv(10).decode()
+            name = self.file_srv_skt.recv(10)
             if(name != ""):
+                name = name.decode().split("\0")[0]
                 filename_msg = self.file_srv_skt.recv(100).decode()
                 if(filename_msg != ""):
                     filename = filename_msg.split()[0]
-                    print("File: " + filename)
+                    print("File:", filename)
                     f = open(filename, 'wb')
 
                     filesize_msg = self.file_srv_skt.recv(10).decode()
-                    if(filesize != ""):
+                    if(filesize_msg != ""):
                         filesize = int(filesize_msg)
-                        print("Size: " , filesize)
+                        print("Size:", filesize)
 
                     if(filesize > 1024):
-                        indata = bytearray(self.file_srv_skt.recv(1024))
-                        filesize -= 1024
                         while filesize > 0:
-                            f.write(indata)
-                            indata = bytearray(self.file_srv_skt.recv(1024))
+                            print(filesize)
+                            indata = self.file_srv_skt.recv(1024)
                             filesize -= 1024
+                            f.write(indata)
                     else:
-                        indata = bytearray(self.file_srv_skt.recv(1024))
+                        indata = self.file_srv_skt.recv(1024)
                         f.write(indata)
+                    print("tetetetstet")
                     f.close()
                     msg = name + ": transfer file is [" + filename +"]"
                     print(msg)
+                    if (not currenttime or currenttime != gettime()):
+                        currenttime = gettime()
+                        self.listbox.insert(END,currenttime)
+                        self.listbox.itemconfig(listitemcounter, {"fg": "#AAAAAA"})
+                        listitemcounter += 1
                     self.listbox.insert(END, msg)
                     self.listbox.itemconfig(listitemcounter, {"fg": "#B833FF"})
                     listitemcounter += 1
                     self.listbox.see(END)
 
     def browsefile(self):
-        # get file path and name
+        # get file path and name (return empty tuple if not select)
         filename = askopenfilename(filetypes=[("image", ".jpg"), ("image", ".png")])
-        if(filename == ""):
+        if(filename == ()):
             return
         self.sendFile(filename)
         

@@ -62,7 +62,6 @@ def boardcastFile(sock, name, fileInfo, buf):
     name = name + '\0'*(10-len(name))
 
     for c in skt_list:
-        print(c)
         # User name (size 10)
         c.send(name.encode('utf-8'))
         # filename (size 100)
@@ -77,7 +76,11 @@ def checkZombie():
     for caddr, state in clientState.items():
         if(state == 0):
             skt_tread_map[caddr].join()
+            # remove
+            del clientState[caddr]
+            del skt_tread_map[caddr]
             print("One thread hss closed")
+            break
 
 def clientAccept():
     global clientState
