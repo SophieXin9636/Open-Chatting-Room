@@ -49,7 +49,7 @@ def client_online(event=None):
     window.bind("<Return>", chat.getMsgInput)
 
     '''thread creation'''
-    tread = threading.Thread(target=chat.recv, args=(clientSocket, saddr), daemon=True)
+    tread = threading.Thread(target=chat.recvMsg, args=(clientSocket, saddr), daemon=True)
     treadFile = threading.Thread(target=chat.recvFile, daemon=True)
     tread.start()
 
@@ -101,10 +101,14 @@ class ChatRoom():
 
         # connect TCP Server
         self.file_srv_skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.file_srv_skt.connect(taddr)
+        self.tcpConnect()
         
         # pack widgets
         self.packUI()
+
+    def tcpConnect(self):
+        self.file_srv_skt.connect(taddr)
+        self.file_srv_skt.send(clientName.get().encode('utf-8'))
 
     def packUI(self):
         # frame
@@ -138,7 +142,7 @@ class ChatRoom():
         else:
             pass
 
-    def recv(self, sock, addr):
+    def recvMsg(self, sock, addr):
         global clientName
         global msg_buf, listitemcounter, currenttime
         # 一個UDP連線在接收訊息前必須要讓系統知道所佔埠->需要先send一次
@@ -161,34 +165,61 @@ class ChatRoom():
                 self.listbox.see(END)
 
     def recvFile(self):
-        filename = self.file_srv_skt.recv(1024)
-        f = open(filename, 'wb')
-        buf = self.file_srv_skt.recv(1024)
-        while buf:
-            f.write(buf)
-            buf = self.file_srv_skt.recv(1024)
-        f.close()
+        while True:
+            name = self.file_srv_skt.recv(10).decode()
+            if(name != ""):
+                filename_msg = self.file_srv_skt.recv(100).decode()
+                if(filename_msg != ""):
+                    filename = filename_msg.split()[0]
+                    print("File: " + filename)
+                    f = open(filename, 'wb')
+
+                    filesize_msg = self.file_srv_skt.recv(10).decode()
+                    if(filesize != ""):
+                        filesize = int(filesize_msg)
+                        print("Size: " , filesize)
+
+                    if(filesize > 1024):
+                        indata = bytearray(self.file_srv_skt.recv(1024))
+                        filesize -= 1024
+                        while filesize > 0:
+                            f.write(indata)
+                            indata = bytearray(self.file_srv_skt.recv(1024))
+                            filesize -= 1024
+                    else:
+                        indata = bytearray(self.file_srv_skt.recv(1024))
+                        f.write(indata)
+                    f.close()
+                    msg = name + ": transfer file is [" + filename +"]"
+                    print(msg)
+                    self.listbox.insert(END, msg)
+                    self.listbox.itemconfig(listitemcounter, {"fg": "#B833FF"})
+                    listitemcounter += 1
+                    self.listbox.see(END)
 
     def browsefile(self):
         # get file path and name
         filename = askopenfilename(filetypes=[("image", ".jpg"), ("image", ".png")])
+        if(filename == ""):
+            return
         self.sendFile(filename)
         
-    def sendFile(self, filename):
+    def sendFile(self, filepath):
         # filename (max string size is 100)
+        filename = filepath[::-1].split("/")[0][::-1] # complete path -> only filename
         filename_msg = filename +" "+ (99-len(filename))*'\0'
         self.file_srv_skt.send(filename_msg.encode('utf-8'))
-        print(filename_msg)
+        print("File: " + filename_msg)
 
         # filesize (max string size is 10)
-        f = open(filename, "rb")
-        buf = f.read()
+        f = open(filepath, "rb")
+        buf = f.read() # data type: bytes
         file_size = len(buf)
-        file_size_msg = "0"*(10-len(buf)) + str(file_size)
+        file_size_msg = "0"*(10-len(str(file_size))) + str(file_size)
         self.file_srv_skt.send(file_size_msg.encode('utf-8'))
-        print(file_size_msg)
+        print("Size: " + file_size_msg)
 
-        # file
+        # file data
         self.file_srv_skt.send(buf)
 
     def logout(self):
@@ -196,12 +227,14 @@ class ChatRoom():
         global clientName, clientSocket
         '''send termination signal'''
         clientSocket.sendto("LOGOUTSIGNAL".encode('utf-8'), saddr)
+        self.file_srv_skt.send("LOGOUTSIGNAL".encode('utf-8'))
 
         '''unpack chatting room widgets'''
         self.top_frame.pack_forget()
         self.middle_frame.pack_forget()
         self.bottom_frame.pack_forget()
         clientSocket.close()
+        self.file_srv_skt.close()
 
         '''pack logout widgets'''
         txt_logout.config(text="Logout successfully.\n\nGoodbye, "+clientName.get()+"!")
