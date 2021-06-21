@@ -1,145 +1,245 @@
 import socket
 import threading
-import tkinter as tk
-from tkinter import filedialog
+import time
+from tkinter import Tk, Frame, Label, Button, Text, Entry, Scrollbar, PhotoImage, Listbox, StringVar
+from tkinter import BOTTOM, TOP, LEFT, RIGHT, END, Y, BOTH
+from tkinter.font import Font as tkfont
+from tkinter.font import BOLD, ITALIC
+from tkinter.filedialog import askdirectory, askopenfilename
 from PIL import Image, ImageTk
 
-size = "800x800"
-chat = None
-window = None
-clientSocket = None
-clientName = "Sophie"
+# tk window basic setting: title and size###############################################
+loginoutsize="400x160"
+chatroomsize="800x600"
+window = Tk()
+window.title("Chatroom")
+window.geometry(loginoutsize)
+#######################################################################################
+
+# functions#############################################################################
+##global var
+clientName = StringVar()
+input_msg = StringVar()
 msg_buf = []
-msg = ""
+listitemcounter = 0
+currenttime = None
+#UDP socket
+clientSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 loginFlag = 0
-HOST = "127.0.0.1"
-UDP_PORT = 9999
-TCP_PORT = 10000
-udp_srv_addr = (HOST, UDP_PORT)
-tcp_srv_addr = (HOST, TCP_PORT)
+serverIp = "127.0.0.1"
+udpServerPort = 9999
+tcpServerPort = 10000
+saddr = (serverIp, udpServerPort)
+taddr = (serverIp, tcpServerPort)
 
-def main():
-	global window, size, chat
-	window = tk.Tk()
-	window.title('Chatroom')
-	window.geometry(size)
-	window.configure(background='white')
-	chat = ChatRoom(window)
-	window.bind('<Return>', chat.getMsgInput)
-	client_online()
+def client_online(event=None):
+    global saddr
+    global clientName
+    global txt_getName, entry_getName, button_getName
 
-def client_online():
-	global udp_srv_addr, window, chat, clientSocket
-	'''UDP socket'''
-	clientSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-	'''thread creation'''
-	tread = threading.Thread(target=chat.recv, args=(clientSocket, udp_srv_addr), daemon=True)
-	treadFile = threading.Thread(target=chat.recvFile, daemon=True)
-	#twrite = threading.Thread(target=chat.send, args=(clientSocket, udp_srv_addr))
-	tread.start()
-	treadFile.start()
-	#twrite.start()
-	window.mainloop()
-	#twrite.join()
-	clientSocket.close()
+    '''unpack login widgets'''
+    txt_getName.pack_forget()
+    entry_getName.pack_forget()
+    button_getName.pack_forget()
+    window.unbind_all('<Return>')
+
+    '''pack chatting room widgets & bind <enter> to <sendMsg>'''
+    window.geometry(chatroomsize)
+    chat = ChatRoom(window)
+    window.bind("<Return>", chat.getMsgInput)
+
+    '''thread creation'''
+    tread = threading.Thread(target=chat.recv, args=(clientSocket, saddr), daemon=True)
+    treadFile = threading.Thread(target=chat.recvFile, daemon=True)
+    tread.start()
+
+def gettime():
+    curtime = str(time.ctime(time.time())).split(" ")
+    return " ["+curtime[1]+" "+curtime[2]+" "+curtime[3][:-3]+"] "
+
+def seticon(iconpath):
+    iconsize = (40, 40)
+    return PhotoImage(Image.open(iconpath).resize(iconsize, Image.NEAREST).convert("RGBA"))
 
 class ChatRoom():
-	def __init__(self, parent):
-		# 將元件分為 top/bottom 兩群並加入主視窗
-		self.top_frame = tk.Frame(parent)
-		self.bottom_frame = tk.Frame(parent)
+    def __init__(self, parent):
+        global font_btn, font_content
+        global clientName, msg_buf
+        # window = top + middle + bottom
+        self.top_frame = Frame(parent)
+        self.middle_frame = Frame(parent)
+        self.bottom_frame = Frame(parent)
 
-		# 顯示聊天訊息 (using listbox + scrollbar)
-		self.scrollbar = tk.Scrollbar(self.top_frame)
-		self.listbox = tk.Listbox(self.top_frame, font=('Arial', 10), height=27, width=90, yscrollcommand=self.scrollbar.set)
-		self.listbox.insert(tk.END, msg_buf[0])
-		self.scrollbar.config(command=self.listbox.yview)
+        # icon
+        iconsize = (40, 40)
+        icon_slfile = PhotoImage(file="img/selectfile.png").subsample(30,30)
 
-		# button
-		self.btn_read = tk.Button(self.bottom_frame, height=1, width=10, text="送出", command=self.getMsgInput)
-		
-		### ToDo: it doesn't work ###
-		file_icon = tk.PhotoImage(file='img/files.png')#.subsample(4, 4)
-		#img = Image.open("img/files.png")
-		#file_icon = ImageTk.PhotoImage(img)
-		#self.btn_select_file = tk.Button(self.bottom_frame, image=file_icon, command=self.clickSelectFile)
-		self.btn_select_file = tk.Button(self.bottom_frame, height=1, width=10, text="選擇檔案", command=self.clickSelectFile)
+        # top: 顯示聊天訊息(listbox & scrollbar)
+        self.scrollbar = Scrollbar(self.top_frame)
+        self.listbox = Listbox(self.top_frame, yscrollcommand=self.scrollbar.set,
+                               height=20, width=90, font=font_content, bg="#FFFFFF")
+        self.scrollbar.config(command=self.listbox.yview)
 
-		self.msg_input_field = tk.Text(self.bottom_frame, height=5)
-		self.setupUI()
+        # middle: 選擇/儲存檔案
+        self.txt_temp = Label(self.middle_frame, text="middle")
+        self.txt_temp2 = Label(self.middle_frame, text="middle")
+        self.button_slfile = Button(self.middle_frame, image=icon_slfile, borderwidth=0,
+                                    command=self.browsefile)
+        self.button_slfile.image = icon_slfile
 
-		self.file_srv_skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		self.file_srv_skt.connect(tcp_srv_addr)
+        # bottom: 傳送聊天訊息或登出
+        cN=clientName.get()
+        cNlen=len(cN)
+        if(cNlen>8):
+            cN=cN[:8]+"..."
+        self.txt_sendbox = Label(self.bottom_frame, text=cN + ":", font=font_content)
+        self.entry_sendbox = Entry(self.bottom_frame, width=60, font=font_content, textvariable=input_msg)
+        self.button_sendbox = Button(self.bottom_frame, text="Send", width=8, fg="#FFFFFF", bg="#5555CC", font=font_btn,
+                                     command=self.getMsgInput)
+        self.button_logout = Button(self.bottom_frame, text="Logout", width=8, fg="#FFFFFF", bg="#AAAAAA", font=font_btn,
+                                     command=self.logout)
 
-	def setupUI(self):
-		self.top_frame.pack()
-		self.bottom_frame.pack(side=tk.BOTTOM)
-		self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-		self.listbox.pack(side=tk.LEFT, fill=tk.BOTH)
-		self.btn_read.pack(side=tk.BOTTOM)
-		self.msg_input_field.pack(side=tk.BOTTOM)
-		self.btn_select_file.pack(side=tk.BOTTOM)
+        # connect TCP Server
+        self.file_srv_skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.file_srv_skt.connect(taddr)
+        
+        # pack widgets
+        self.packUI()
 
-	# 建立 "送出" 訊息的按鈕 或按下 enter 即傳送
-	def getMsgInput(self, event=None):
-		global msg_buf, clientName, clientSocket, udp_srv_addr
+    def packUI(self):
+        # frame
+        self.top_frame.pack(side=TOP,pady=10)
+        self.middle_frame.pack(side=TOP,pady=10)
+        self.bottom_frame.pack(side=BOTTOM,pady=10)
 
-		if(event == None):
-			text = self.msg_input_field.get(1.0, tk.END+"-1c")
-		else:
-			text = self.msg_input_field.get(1.0, tk.END+"-2c")
-		
-		if(text != ""):
-			msg = clientName + ' : ' + text
-			msg_buf.append(msg)
-			self.listbox.see(tk.END) # auto scroll to the latest msg
-			#self.listbox.insert(tk.END, msg)
-			self.msg_input_field.delete("1.0","end") # clear
-			clientSocket.sendto(text.encode('utf-8'), udp_srv_addr)
-			return msg
-		else:
-			return ""
+        # top
+        self.scrollbar.pack(side=RIGHT, fill=Y)
+        self.listbox.pack(side=LEFT, fill=BOTH, pady=5)
+
+        # middle
+        self.button_slfile.pack(side=BOTTOM,padx=2)
+
+        # bottom
+        self.txt_sendbox.pack(side=LEFT)
+        self.entry_sendbox.pack(side=LEFT, padx=2)
+        self.button_sendbox.pack(side=LEFT, padx=2)
+        self.button_logout.pack(side=RIGHT, padx=2)
+
+    def getMsgInput(self, event=None):
+        global saddr
+        global clientSocket
+        global msg_buf, input_msg
+
+        text = input_msg.get()
+
+        if (text != ""):
+            clientSocket.sendto(text.encode('utf-8'), saddr)
+            self.entry_sendbox.delete(0,"end")
+        else:
+            pass
+
+    def recv(self, sock, addr):
+        global clientName
+        global msg_buf, listitemcounter, currenttime
+        # 一個UDP連線在接收訊息前必須要讓系統知道所佔埠->需要先send一次
+        sock.sendto(clientName.get().encode("utf-8"), addr)
+
+        while (1):
+            msg = sock.recv(1024)
+            if (msg != ""):
+                if (not currenttime or currenttime != gettime()):
+                    currenttime = gettime()
+                    self.listbox.insert(END,currenttime)
+                    self.listbox.itemconfig(listitemcounter, {"fg": "#AAAAAA"})
+                    listitemcounter += 1
+                msg=msg.decode("utf-8")
+                msg_buf.append(msg)
+                self.listbox.insert(END,msg)
+                if (msg[:21] == "<System notification>"):
+                    self.listbox.itemconfig(listitemcounter, {"fg": "#0000CC"})
+                listitemcounter += 1
+                self.listbox.see(END)
+
+    def recvFile(self):
+        filename = self.file_srv_skt.recv(1024)
+        f = open(filename, 'wb')
+        buf = self.file_srv_skt.recv(1024)
+        while buf:
+            f.write(buf)
+            buf = self.file_srv_skt.recv(1024)
+        f.close()
+
+    def browsefile(self):
+        # get file path and name
+        filename = askopenfilename(filetypes=[("image", ".jpg"), ("image", ".png")])
+        self.sendFile(filename)
+        
+    def sendFile(self, filename):
+        # filename (max string size is 100)
+        filename_msg = filename +" "+ (99-len(filename))*'\0'
+        self.file_srv_skt.send(filename_msg.encode('utf-8'))
+        print(filename_msg)
+
+        # filesize (max string size is 10)
+        f = open(filename, "rb")
+        buf = f.read()
+        file_size = len(buf)
+        file_size_msg = "0"*(10-len(buf)) + str(file_size)
+        self.file_srv_skt.send(file_size_msg.encode('utf-8'))
+        print(file_size_msg)
+
+        # file
+        self.file_srv_skt.send(buf)
+
+    def logout(self):
+        global window
+        global clientName, clientSocket
+        '''send termination signal'''
+        clientSocket.sendto("LOGOUTSIGNAL".encode('utf-8'), saddr)
+
+        '''unpack chatting room widgets'''
+        self.top_frame.pack_forget()
+        self.middle_frame.pack_forget()
+        self.bottom_frame.pack_forget()
+        clientSocket.close()
+
+        '''pack logout widgets'''
+        txt_logout.config(text="Logout successfully.\n\nGoodbye, "+clientName.get()+"!")
+        txt_logout.pack(side=TOP, pady=15)
+        window.geometry("400x100")
 
 
-	def recv(self, sock, addr):
-		global clientName
-		sock.sendto(clientName.encode('utf-8'), addr)
-		while True:
-			msg = sock.recv(1024)
-			if(msg != ""):
-				msg_buf.append(msg)
-				self.listbox.see(tk.END) # auto scroll to the latest msg
-				self.listbox.insert(tk.END, msg.decode('utf-8'))
 
-	def recvFile(self):
-		filename = self.file_srv_skt.recv(1024)
-		f = open(filename, 'wb')
-		buf = self.file_srv_skt.recv(1024)
-		while buf:
-			f.write(buf)
-			buf = self.file_srv_skt.recv(1024)
-		f.close()
 
-	def clickSelectFile(self):
-		filename = filedialog.askopenfilename(initialdir="/", title="Select file", filetypes=(("jpeg files","*.jpg"),("all files","*.*")))
-		self.sendFile(filename)
 
-	def sendFile(self, filename):
-		# filename (max string size is 100)
-		filename_msg = filename +" "+ (99-len(filename))*'\0'
-		self.file_srv_skt.send(filename_msg.encode('utf-8'))
 
-		# filesize (max string size is 10)
-		f = open(filename, "rb")
-		buf = f.read()
-		file_size = len(buf)
-		file_size_msg = "0"*(10-len(buf)) + str(file_size)
-		self.file_srv_skt.send(file_size_msg.encode('utf-8'))
+#######################################################################################
 
-		# file
-		self.file_srv_skt.send(buf)
+# label / button########################################################################
+##font
+font_btn = tkfont(family="微軟正黑體", size=10, weight=BOLD)
+font_content = tkfont(family="微軟正黑體", size=10)
+font_cr = tkfont(family="Times", size=8, slant=ITALIC)
+##login/logout phase
+txt_getName = Label(window, text="Please enter your name", font=font_content)
+entry_getName = Entry(window, width=30, font=font_content, textvariable=clientName)
+button_getName = Button(window, text="Login!", width=8, fg="#FFFFFF", bg="#5555CC", font=font_btn,
+                        command=client_online)
+txt_logout=Label(window, text="", font=font_content)
+##copyright
+txt_copyright = Label(window, text="® SophieXin & KaielHsu 2021", font=font_cr)
+#######################################################################################
 
+# pack / place##########################################################################
+##login
+txt_getName.pack(side=TOP, pady=15)
+entry_getName.pack(side=TOP, pady=5)
+button_getName.pack(side=TOP, pady=10)
+window.bind("<Return>", client_online)
+##copyright
+txt_copyright.pack(side=BOTTOM)
+#######################################################################################
+
+# window looping########################################################################
 if __name__ == '__main__':
-	clientName = input("Welcome to the chatroom, please enter your name first: ")
-	msg_buf.append("---------- 哈囉！%s～歡迎來到聊天室！退出聊天室請輸入'EXIT'(不分大小寫) ----------" % clientName)
-	main()
+    window.mainloop()
