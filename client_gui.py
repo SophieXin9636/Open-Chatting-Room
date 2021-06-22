@@ -6,11 +6,12 @@ from tkinter import BOTTOM, TOP, LEFT, RIGHT, END, Y, BOTH
 from tkinter.font import Font as tkfont
 from tkinter.font import BOLD, ITALIC
 from tkinter.filedialog import askdirectory, askopenfilename
-from PIL import Image, ImageTk
+from PIL import Image, ImageTk, ImageFile
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 # tk window basic setting: title and size###############################################
-loginoutsize="400x160"
-chatroomsize="800x600"
+loginoutsize = "400x160"
+chatroomsize = "800x650"
 window = Tk()
 window.title("Chatroom")
 window.geometry(loginoutsize)
@@ -23,14 +24,15 @@ input_msg = StringVar()
 msg_buf = []
 listitemcounter = 0
 currenttime = None
-#UDP socket
+# UDP socket
 clientSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 loginFlag = 0
 serverIp = "127.0.0.1"
 udpServerPort = 9999
-tcpServerPort = 10000
+tcpServerPort = 10001
 saddr = (serverIp, udpServerPort)
 taddr = (serverIp, tcpServerPort)
+
 
 def client_online(event=None):
     global saddr
@@ -54,13 +56,16 @@ def client_online(event=None):
     tread.start()
     treadFile.start()
 
+
 def gettime():
     curtime = str(time.ctime(time.time())).split(" ")
-    return " ["+curtime[1]+" "+curtime[2]+" "+curtime[3][:-3]+"] "
+    return " [" + curtime[1] + " " + curtime[2] + " " + curtime[3][:-3] + "] "
+
 
 def seticon(iconpath):
     iconsize = (40, 40)
     return PhotoImage(Image.open(iconpath).resize(iconsize, Image.NEAREST).convert("RGBA"))
+
 
 class ChatRoom():
     def __init__(self, parent):
@@ -73,7 +78,7 @@ class ChatRoom():
 
         # icon
         iconsize = (40, 40)
-        icon_slfile = PhotoImage(file="img/selectfile.png").subsample(30,30)
+        icon_slfile = PhotoImage(file="img/selectfile.png").subsample(30, 30)
 
         # top: 顯示聊天訊息(listbox & scrollbar)
         self.scrollbar = Scrollbar(self.top_frame)
@@ -89,21 +94,22 @@ class ChatRoom():
         self.button_slfile.image = icon_slfile
 
         # bottom: 傳送聊天訊息或登出
-        cN=clientName.get()
-        cNlen=len(cN)
-        if(cNlen>8):
-            cN=cN[:8]+"..."
+        cN = clientName.get()
+        cNlen = len(cN)
+        if (cNlen > 8):
+            cN = cN[:8] + "..."
         self.txt_sendbox = Label(self.bottom_frame, text=cN + ":", font=font_content)
         self.entry_sendbox = Entry(self.bottom_frame, width=60, font=font_content, textvariable=input_msg)
         self.button_sendbox = Button(self.bottom_frame, text="Send", width=8, fg="#FFFFFF", bg="#5555CC", font=font_btn,
                                      command=self.getMsgInput)
-        self.button_logout = Button(self.bottom_frame, text="Logout", width=8, fg="#FFFFFF", bg="#AAAAAA", font=font_btn,
-                                     command=self.logout)
+        self.button_logout = Button(self.bottom_frame, text="Logout", width=8, fg="#FFFFFF", bg="#AAAAAA",
+                                    font=font_btn,
+                                    command=self.logout)
 
         # connect TCP Server
         self.file_srv_skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.tcpConnect()
-        
+
         # pack widgets
         self.packUI()
 
@@ -113,16 +119,16 @@ class ChatRoom():
 
     def packUI(self):
         # frame
-        self.top_frame.pack(side=TOP,pady=10)
-        self.middle_frame.pack(side=TOP,pady=10)
-        self.bottom_frame.pack(side=BOTTOM,pady=10)
+        self.top_frame.pack(side=TOP, pady=10)
+        self.middle_frame.pack(side=TOP, pady=10)
+        self.bottom_frame.pack(side=BOTTOM, pady=10)
 
         # top
         self.scrollbar.pack(side=RIGHT, fill=Y)
         self.listbox.pack(side=LEFT, fill=BOTH, pady=5)
 
         # middle
-        self.button_slfile.pack(side=BOTTOM,padx=2)
+        self.button_slfile.pack(side=TOP, padx=2)
 
         # bottom
         self.txt_sendbox.pack(side=LEFT)
@@ -139,7 +145,7 @@ class ChatRoom():
 
         if (text != ""):
             clientSocket.sendto(text.encode('utf-8'), saddr)
-            self.entry_sendbox.delete(0,"end")
+            self.entry_sendbox.delete(0, "end")
         else:
             pass
 
@@ -154,10 +160,10 @@ class ChatRoom():
             if (msg != ""):
                 if (not currenttime or currenttime != gettime()):
                     currenttime = gettime()
-                    self.listbox.insert(END,currenttime)
+                    self.listbox.insert(END, currenttime)
                     self.listbox.itemconfig(listitemcounter, {"fg": "#AAAAAA"})
                     listitemcounter += 1
-                msg=msg.decode("utf-8")
+                msg = msg.decode("utf-8")
                 msg_buf.append(msg)
                 if(len(msg) > 100):
                     tmp = msg.split("\n")
@@ -169,7 +175,7 @@ class ChatRoom():
                             self.listbox.itemconfig(listitemcounter, {"fg": "#FF338A"})
                         listitemcounter += 1
                 else:
-                    self.listbox.insert(END,msg)
+                    self.listbox.insert(END, msg)
                 if (msg[:21] == "<System notification>"):
                     self.listbox.itemconfig(listitemcounter, {"fg": "#0000CC"})
                 listitemcounter += 1
@@ -179,35 +185,36 @@ class ChatRoom():
         global listitemcounter, currenttime
         while True:
             name = self.file_srv_skt.recv(10)
-            if(name != ""):
-                name = name.decode().split("\0")[0]
-                filename_msg = self.file_srv_skt.recv(100).decode()
-                if(filename_msg != ""):
-                    filename = filename_msg.split()[0]
+            if (name != ""):
+                # [!!!]
+                # this causes problem due to unexpected cut in unicode(if clientName is in Chinese, same problem with filename)
+                name = name.decode("utf-8").split('\0')[0]
+                filename_msg = self.file_srv_skt.recv(100).decode("utf-8")
+                if (filename_msg != ""):
+                    filename = filename_msg.split('\0')[0]
                     print("File:", filename)
                     f = open(filename, 'wb')
 
-                    filesize_msg = self.file_srv_skt.recv(10).decode()
-                    if(filesize_msg != ""):
+                    filesize_msg = self.file_srv_skt.recv(10).decode("utf-8")
+                    if (filesize_msg != ""):
                         filesize = int(filesize_msg)
                         print("Size:", filesize)
 
-                    if(filesize > 1024):
-                        while filesize > 0:
-                            print(filesize)
-                            indata = self.file_srv_skt.recv(1024)
-                            filesize -= 1024
-                            f.write(indata)
-                    else:
+                    while (filesize > 1024):
+                        # print(filesize)
                         indata = self.file_srv_skt.recv(1024)
+                        filesize -= 1024
                         f.write(indata)
-                    print("tetetetstet")
-                    f.close()
-                    msg = name + ": transfer file is [" + filename +"]"
-                    print(msg)
+                    else:
+                        # print(filesize)
+                        indata = self.file_srv_skt.recv(filesize)
+                        f.write(indata)
+                        f.close()
+                    print("File received!")
+                    msg = name + ": transfered a file <" + filename + ">"
                     if (not currenttime or currenttime != gettime()):
                         currenttime = gettime()
-                        self.listbox.insert(END,currenttime)
+                        self.listbox.insert(END, currenttime)
                         self.listbox.itemconfig(listitemcounter, {"fg": "#AAAAAA"})
                         listitemcounter += 1
                     self.listbox.insert(END, msg)
@@ -215,30 +222,51 @@ class ChatRoom():
                     listitemcounter += 1
                     self.listbox.see(END)
 
+                    '''display if it's a picture'''
+                    filetype = filename.split('.')[-1]
+                    pictype = ["png", "jpg", "tiff", "gif", "bmp"]
+                    if (filetype.lower() in pictype):
+                        try:
+                            self.txt_picfilename.pack_forget()
+                            self.pic_fromfile.pack_forget()
+                        except:
+                            pass
+                        rd_fromfile = ImageTk.PhotoImage(Image.open(filename).resize((120, 120), Image.BILINEAR))
+                        self.txt_picfilename = Label(self.middle_frame, text=filename, font=font_content, fg="#BBBBBB")
+                        self.pic_fromfile = Label(self.middle_frame, image=rd_fromfile, width=116, height=116)
+                        self.txt_picfilename.pack(side=LEFT)
+                        self.pic_fromfile.pack(side=LEFT,pady=15)
+
     def browsefile(self):
         # get file path and name (return empty tuple if not select)
-        filename = askopenfilename(filetypes=[("image", ".jpg"), ("image", ".png")])
-        if(filename == ()):
-            return
-        self.sendFile(filename)
-        
+        filename = askopenfilename()
+        window.update()
+        if (filename != ()):
+            self.sendFile(filename)
+
     def sendFile(self, filepath):
         # filename (max string size is 100)
-        filename = filepath[::-1].split("/")[0][::-1] # complete path -> only filename
-        filename_msg = filename +" "+ (99-len(filename))*'\0'
+        filename = filepath[::-1].split("/")[0][::-1]  # complete path -> only filename
+
+        if (len(filename) > 99):
+            filename_msg = filename[:100]
+        else:
+            filename_msg = filename + (100 - len(filename)) * '\0'  # padding
         self.file_srv_skt.send(filename_msg.encode('utf-8'))
         print("File: " + filename_msg)
 
         # filesize (max string size is 10)
         f = open(filepath, "rb")
-        buf = f.read() # data type: bytes
+        buf = f.read()  # data type: bytes
         file_size = len(buf)
-        file_size_msg = "0"*(10-len(str(file_size))) + str(file_size)
+        file_size_msg = "0" * (10 - len(str(file_size))) + str(file_size)
         self.file_srv_skt.send(file_size_msg.encode('utf-8'))
         print("Size: " + file_size_msg)
 
         # file data
         self.file_srv_skt.send(buf)
+        print("File sent!")
+        f.close()
 
     def logout(self):
         global window
@@ -255,13 +283,9 @@ class ChatRoom():
         self.file_srv_skt.close()
 
         '''pack logout widgets'''
-        txt_logout.config(text="Logout successfully.\n\nGoodbye, "+clientName.get()+"!")
+        txt_logout.config(text="Logout successfully.\n\nGoodbye, " + clientName.get() + "!")
         txt_logout.pack(side=TOP, pady=15)
-        window.geometry("400x100")
-
-
-
-
+        window.geometry(loginoutsize)
 
 
 #######################################################################################
@@ -276,7 +300,7 @@ txt_getName = Label(window, text="Please enter your name", font=font_content)
 entry_getName = Entry(window, width=30, font=font_content, textvariable=clientName)
 button_getName = Button(window, text="Login!", width=8, fg="#FFFFFF", bg="#5555CC", font=font_btn,
                         command=client_online)
-txt_logout=Label(window, text="", font=font_content)
+txt_logout = Label(window, text="", font=font_content)
 ##copyright
 txt_copyright = Label(window, text="® SophieXin & KaielHsu 2021", font=font_cr)
 #######################################################################################
