@@ -57,5 +57,6 @@ Button, Checkbutton, Entry, Frame,Label, LabelFrame, Menubutton, PanedWindow,Rad
 
 ### UDP Server
 * 負責傳收、廣播訊息
-
+* 天氣現況
+* 熱門搜尋 (排名前十)
 
