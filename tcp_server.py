@@ -7,7 +7,7 @@ TCP File serverSocket
 """
 
 HOST = "127.0.0.1"
-PORT = 10000
+PORT = 10001
 NUM_OF_CLIENT = 10
 
 serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -29,47 +29,54 @@ def recv_file(sock, caddr):
     # recv file
     while True:
         buf = bytearray()
-        filename_msg = sock.recv(100).decode()
+        filename_msg = sock.recv(100).decode("utf-8")
         if(filename_msg == "LOGOUTSIGNAL"):
             print("<System notification> " + name + " has left the chatting room.")
             clientState[caddr] = 0
             sock.close()
             break
         elif (filename_msg != ""):
-            filename = filename_msg.split()[0]
-            print("File: " + filename)
+            try:
+                filename = filename_msg.split('\0')[0]
+                print("File: " + filename)
 
-            filesize_msg = sock.recv(10).decode()
-            if(filesize_msg != ""):
-                filesize = int(filesize_msg)
-                print("Size: " , filesize)
+                filesize_msg = sock.recv(10).decode("utf-8")
+                if(filesize_msg != ""):
+                    filesize = int(filesize_msg)
+                    print("Size: " , filesize)
 
-            if(filesize > 1024):
-                indata = bytearray(sock.recv(1024))
-                filesize -= 1024
-                while filesize > 0:
-                    buf += indata
+                while(filesize > 1024):
                     indata = bytearray(sock.recv(1024))
                     filesize -= 1024
-            else:
-                indata = bytearray(sock.recv(1024))
-                buf += indata
-            fileInfo = [filename_msg, filesize_msg]
-            boardcastFile(sock, name, fileInfo, buf)
-            print("File Transfer Success!")
+                    buf += indata
+                else:
+                    indata = bytearray(sock.recv(filesize))
+                    buf += indata
+                print("File is received successfully!")
+                fileInfo = [filename_msg, filesize_msg]
+                boardcastFile(sock, name, fileInfo, buf)
+            except ValueError:
+                print("Unicode convert problem.")
 
 def boardcastFile(sock, name, fileInfo, buf):
-    name = name + '\0'*(10-len(name))
-
+    global  skt_list
+    if (len(name) > 9):
+        name = name[:10]
+    else:
+        name = name + '\0'*(10-len(name)) #padding
     for c in skt_list:
-        # User name (size 10)
-        c.send(name.encode('utf-8'))
-        # filename (size 100)
-        c.send(fileInfo[0].encode('utf-8'))
-        # filesize (size 10)
-        c.send(fileInfo[1].encode('utf-8'))
-        # file data
-        c.send(bytes(buf))
+        try:
+            # User name (size 10)
+            c.send(name.encode('utf-8'))
+            # filename (size 100)
+            c.send(fileInfo[0].encode('utf-8'))
+            # filesize (size 10)
+            c.send(fileInfo[1].encode('utf-8'))
+            # file data
+            c.send(buf)
+        except OSError:
+            continue
+    print("File has been boradcast!")
 
 def checkZombie():
     global clientState
@@ -79,7 +86,7 @@ def checkZombie():
             # remove
             del clientState[caddr]
             del skt_tread_map[caddr]
-            print("One thread hss closed")
+            print("One thread has closed")
             break
 
 def clientAccept():
