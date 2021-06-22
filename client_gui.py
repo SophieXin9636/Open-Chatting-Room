@@ -170,6 +170,8 @@ class ChatRoom():
                     for i, s in enumerate(tmp):
                         self.listbox.insert(END, s)
                         if i == 0:
+                            self.listbox.itemconfig(END, {"fg": "#B833FF"})
+                        elif i == 1:
                             self.listbox.itemconfig(END, {"fg": "#0000CC"})
                         else:
                             self.listbox.itemconfig(END, {"fg": "#FF338A"})
@@ -215,10 +217,10 @@ class ChatRoom():
                     if (not currenttime or currenttime != gettime()):
                         currenttime = gettime()
                         self.listbox.insert(END, currenttime)
-                        self.listbox.itemconfig(listitemcounter, {"fg": "#AAAAAA"})
+                        self.listbox.itemconfig(END, {"fg": "#AAAAAA"})
                         listitemcounter += 1
                     self.listbox.insert(END, msg)
-                    self.listbox.itemconfig(listitemcounter, {"fg": "#B833FF"})
+                    self.listbox.itemconfig(END, {"fg": "#B833FF"})
                     listitemcounter += 1
                     self.listbox.see(END)
 
@@ -241,7 +243,7 @@ class ChatRoom():
         # get file path and name (return empty tuple if not select)
         filename = askopenfilename()
         window.update()
-        if (filename != ()):
+        if (filename != () and filename != ""):
             self.sendFile(filename)
 
     def sendFile(self, filepath):

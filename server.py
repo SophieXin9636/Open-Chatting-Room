@@ -84,7 +84,7 @@ def init():
     data = "更新時間: " + time
     for i in range(1, 14):
         if(i != 3 and i != 6 and i != 7):
-            data += "\n地區: " + t[i]['CountyName']['C'] +", 溫度: " + t[i]['Temperature']['C'] +", 天氣: " + t[i]['Weather']['C'] +", 累積雨量: " + t[i]['Rain']['C']
+            data += "\n" + t[i]['CountyName']['C'] +": " + t[i]['Temperature']['C'] +"度, 天氣: " + t[i]['Weather']['C'] +", 累積雨量: " + t[i]['Rain']['C']
     msg["天氣"] = data
 
     # Trending Searches
