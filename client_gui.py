@@ -254,7 +254,7 @@ class ChatRoom():
             filename_msg = filename[:100]
         else:
             filename_msg = filename + (100 - len(filename)) * '\0'  # padding
-        self.file_srv_skt.send(filename_msg.encode('utf-8'))
+        self.file_srv_skt.send(filename_msg.encode('utf-8')[:100])
         print("File: " + filename_msg)
 
         # filesize (max string size is 10)
