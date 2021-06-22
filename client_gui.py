@@ -159,7 +159,17 @@ class ChatRoom():
                     listitemcounter += 1
                 msg=msg.decode("utf-8")
                 msg_buf.append(msg)
-                self.listbox.insert(END,msg)
+                if(len(msg) > 100):
+                    tmp = msg.split("\n")
+                    for i, s in enumerate(tmp):
+                        self.listbox.insert(END, s)
+                        if i == 0:
+                            self.listbox.itemconfig(listitemcounter, {"fg": "#0000CC"})
+                        else:
+                            self.listbox.itemconfig(listitemcounter, {"fg": "#FF338A"})
+                        listitemcounter += 1
+                else:
+                    self.listbox.insert(END,msg)
                 if (msg[:21] == "<System notification>"):
                     self.listbox.itemconfig(listitemcounter, {"fg": "#0000CC"})
                 listitemcounter += 1
