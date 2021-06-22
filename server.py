@@ -58,7 +58,7 @@ def server_running():
             bm = "<System notification> " + name + " has left the chatting room."
         # normal case
         elif data == "天氣" or data == "熱門搜尋":
-            bm = name + ": " + data + "\n" + msg[data]
+            bm = name + ": " + data + "\n" + "System: " + msg[data]
             print(bm)
         else:
             bm = name + ": " + data

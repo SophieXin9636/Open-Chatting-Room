@@ -161,7 +161,7 @@ class ChatRoom():
                 if (not currenttime or currenttime != gettime()):
                     currenttime = gettime()
                     self.listbox.insert(END, currenttime)
-                    self.listbox.itemconfig(listitemcounter, {"fg": "#AAAAAA"})
+                    self.listbox.itemconfig(END, {"fg": "#AAAAAA"})
                     listitemcounter += 1
                 msg = msg.decode("utf-8")
                 msg_buf.append(msg)
@@ -170,14 +170,14 @@ class ChatRoom():
                     for i, s in enumerate(tmp):
                         self.listbox.insert(END, s)
                         if i == 0:
-                            self.listbox.itemconfig(listitemcounter, {"fg": "#0000CC"})
+                            self.listbox.itemconfig(END, {"fg": "#0000CC"})
                         else:
-                            self.listbox.itemconfig(listitemcounter, {"fg": "#FF338A"})
+                            self.listbox.itemconfig(END, {"fg": "#FF338A"})
                         listitemcounter += 1
                 else:
                     self.listbox.insert(END, msg)
                 if (msg[:21] == "<System notification>"):
-                    self.listbox.itemconfig(listitemcounter, {"fg": "#0000CC"})
+                    self.listbox.itemconfig(END, {"fg": "#0000CC"})
                 listitemcounter += 1
                 self.listbox.see(END)
 
