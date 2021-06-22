@@ -7,6 +7,7 @@ from tkinter.font import Font as tkfont
 from tkinter.font import BOLD, ITALIC
 from tkinter.filedialog import askdirectory, askopenfilename
 from PIL import Image, ImageTk, ImageFile
+from playsound import playsound
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 # tk window basic setting: title and size###############################################
@@ -213,21 +214,17 @@ class ChatRoom():
                         f.write(indata)
                         f.close()
                     print("File received!")
-                    msg = name + ": transfered a file <" + filename + ">"
                     if (not currenttime or currenttime != gettime()):
                         currenttime = gettime()
                         self.listbox.insert(END, currenttime)
                         self.listbox.itemconfig(END, {"fg": "#AAAAAA"})
                         listitemcounter += 1
-                    self.listbox.insert(END, msg)
-                    self.listbox.itemconfig(END, {"fg": "#B833FF"})
-                    listitemcounter += 1
-                    self.listbox.see(END)
 
                     '''display if it's a picture'''
                     filetype = filename.split('.')[-1]
                     pictype = ["png", "jpg", "tiff", "gif", "bmp"]
                     if (filetype.lower() in pictype):
+                        msg = name + ": display a file <" + filename + ">"
                         try:
                             self.txt_picfilename.pack_forget()
                             self.pic_fromfile.pack_forget()
@@ -238,6 +235,19 @@ class ChatRoom():
                         self.pic_fromfile = Label(self.middle_frame, image=rd_fromfile, width=116, height=116)
                         self.txt_picfilename.pack(side=LEFT)
                         self.pic_fromfile.pack(side=LEFT,pady=15)
+
+                    ''' play music if it's a sound file '''
+                    soundtype = ["mp3", "wav", "m4a"]
+                    if (filetype.lower() in soundtype):
+                        msg = name + ": playing music <" + filename + ">"
+
+                    self.listbox.insert(END, msg)
+                    self.listbox.itemconfig(END, {"fg": "#B833FF"})
+                    listitemcounter += 1
+                    self.listbox.see(END)
+
+                    if (filetype.lower() in soundtype):
+                        playsound(filename)
 
     def browsefile(self):
         # get file path and name (return empty tuple if not select)
