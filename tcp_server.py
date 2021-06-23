@@ -18,8 +18,6 @@ skt_list = []
 skt_tread_map = {} # {address: thread info}
 clientState = {}  # dict{address: login state}
 
-print('TCP File Server ip: %s:%s' % (HOST, PORT))
-
 def recv_file(sock, caddr):
     # recv name
     name = sock.recv(100).decode("utf-8")
@@ -29,7 +27,11 @@ def recv_file(sock, caddr):
     # recv file
     while True:
         buf = bytearray()
-        filename_msg = sock.recv(100).decode("utf-8")
+        try:
+            filename_msg = sock.recv(100).decode("utf-8")
+        except ConnectionResetError:
+            print("User has disconnected.")
+            break
         if(filename_msg == "LOGOUTSIGNAL"):
             print("<System notification> " + name + " has left the chatting room.")
             clientState[caddr] = 0
@@ -53,12 +55,15 @@ def recv_file(sock, caddr):
                     indata = bytearray(sock.recv(filesize))
                     buf += indata
                 print("File is received successfully!")
-                fileInfo = [filename_msg, filesize_msg]
-                boardcastFile(sock, name, fileInfo, buf)
-            except ValueError:
-                print("Unicode convert problem.")
 
-def boardcastFile(sock, name, fileInfo, buf):
+                emjFlagstr = sock.recv(1)
+
+                fileInfo = [filename_msg, filesize_msg]
+                boardcastFile(sock, name, fileInfo, buf, emjFlagstr)
+            except ValueError:
+                print("Unicode coding problem.")
+
+def boardcastFile(sock, name, fileInfo, buf, emjFlag):
     global  skt_list
     if (len(name) > 9):
         name = name[:10]
@@ -74,6 +79,8 @@ def boardcastFile(sock, name, fileInfo, buf):
             c.send(fileInfo[1].encode('utf-8'))
             # file data
             c.send(buf)
+            # emoji flag
+            c.send(emjFlag)
         except OSError:
             continue
     print("File has been boradcast!")
@@ -86,7 +93,7 @@ def checkZombie():
             # remove
             del clientState[caddr]
             del skt_tread_map[caddr]
-            print("One thread has closed")
+            print("One thread has closed.")
             break
 
 def clientAccept():
@@ -101,6 +108,7 @@ def clientAccept():
         checkZombie()
 
 if __name__ == '__main__':
+    print("TCP File Server(%s:%s) is online." % (HOST, PORT))
     tAccept = threading.Thread(target=clientAccept, daemon=True)
     tAccept.start()
     tAccept.join()
