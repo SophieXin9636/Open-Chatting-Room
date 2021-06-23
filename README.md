@@ -5,8 +5,8 @@ Python - GUI Programming (Tkinter)
 * [參考](https://www.itbook5.com/2019/02/10638/#ttk-widgets)
 
 ## 目前問題
-> [time=6.21 18:59]
-無
+> [time=6.22 14:43]
+傳送圖片之後，圖片會將對話輸入框給覆蓋掉
 
 ## 待完成
 * 傳送圖片之後顯示在聊天室上 (貼圖)
@@ -57,5 +57,6 @@ Button, Checkbutton, Entry, Frame,Label, LabelFrame, Menubutton, PanedWindow,Rad
 
 ### UDP Server
 * 負責傳收、廣播訊息
-
+* 天氣現況
+* 熱門搜尋 (排名前十)
 

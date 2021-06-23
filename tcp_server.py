@@ -67,7 +67,7 @@ def boardcastFile(sock, name, fileInfo, buf):
     for c in skt_list:
         try:
             # User name (size 10)
-            c.send(name.encode('utf-8'))
+            c.send(name.encode('utf-8')[:10])
             # filename (size 100)
             c.send(fileInfo[0].encode('utf-8'))
             # filesize (size 10)
@@ -97,15 +97,11 @@ def clientAccept():
         skt_list.append(cli_skt)
         tread = threading.Thread(target=recv_file, args=(cli_skt, caddr), daemon=True)
         skt_tread_map[caddr] = tread
-        #tread_list.append(tread)
         tread.start()
         checkZombie()
 
 if __name__ == '__main__':
     tAccept = threading.Thread(target=clientAccept, daemon=True)
     tAccept.start()
-    # close thread
-    #for t in tread_list:
-    #    t.join()
     tAccept.join()
     serverSocket.close()

@@ -7,6 +7,7 @@ from tkinter.font import Font as tkfont
 from tkinter.font import BOLD, ITALIC
 from tkinter.filedialog import askdirectory, askopenfilename
 from PIL import Image, ImageTk, ImageFile
+from playsound import playsound
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 # tk window basic setting: title and size###############################################
@@ -161,13 +162,25 @@ class ChatRoom():
                 if (not currenttime or currenttime != gettime()):
                     currenttime = gettime()
                     self.listbox.insert(END, currenttime)
-                    self.listbox.itemconfig(listitemcounter, {"fg": "#AAAAAA"})
+                    self.listbox.itemconfig(END, {"fg": "#AAAAAA"})
                     listitemcounter += 1
                 msg = msg.decode("utf-8")
                 msg_buf.append(msg)
-                self.listbox.insert(END, msg)
+                if(len(msg) > 100):
+                    tmp = msg.split("\n")
+                    for i, s in enumerate(tmp):
+                        self.listbox.insert(END, s)
+                        if i == 0:
+                            self.listbox.itemconfig(END, {"fg": "#B833FF"})
+                        elif i == 1:
+                            self.listbox.itemconfig(END, {"fg": "#0000CC"})
+                        else:
+                            self.listbox.itemconfig(END, {"fg": "#FF338A"})
+                        listitemcounter += 1
+                else:
+                    self.listbox.insert(END, msg)
                 if (msg[:21] == "<System notification>"):
-                    self.listbox.itemconfig(listitemcounter, {"fg": "#0000CC"})
+                    self.listbox.itemconfig(END, {"fg": "#0000CC"})
                 listitemcounter += 1
                 self.listbox.see(END)
 
@@ -201,21 +214,17 @@ class ChatRoom():
                         f.write(indata)
                         f.close()
                     print("File received!")
-                    msg = name + ": transfered a file <" + filename + ">"
                     if (not currenttime or currenttime != gettime()):
                         currenttime = gettime()
                         self.listbox.insert(END, currenttime)
-                        self.listbox.itemconfig(listitemcounter, {"fg": "#AAAAAA"})
+                        self.listbox.itemconfig(END, {"fg": "#AAAAAA"})
                         listitemcounter += 1
-                    self.listbox.insert(END, msg)
-                    self.listbox.itemconfig(listitemcounter, {"fg": "#B833FF"})
-                    listitemcounter += 1
-                    self.listbox.see(END)
 
                     '''display if it's a picture'''
                     filetype = filename.split('.')[-1]
                     pictype = ["png", "jpg", "tiff", "gif", "bmp"]
                     if (filetype.lower() in pictype):
+                        msg = name + ": display a file <" + filename + ">"
                         try:
                             self.txt_picfilename.pack_forget()
                             self.pic_fromfile.pack_forget()
@@ -227,11 +236,24 @@ class ChatRoom():
                         self.txt_picfilename.pack(side=LEFT)
                         self.pic_fromfile.pack(side=LEFT,pady=15)
 
+                    ''' play music if it's a sound file '''
+                    soundtype = ["mp3", "wav", "m4a"]
+                    if (filetype.lower() in soundtype):
+                        msg = name + ": playing music <" + filename + ">"
+
+                    self.listbox.insert(END, msg)
+                    self.listbox.itemconfig(END, {"fg": "#B833FF"})
+                    listitemcounter += 1
+                    self.listbox.see(END)
+
+                    if (filetype.lower() in soundtype):
+                        playsound(filename)
+
     def browsefile(self):
         # get file path and name (return empty tuple if not select)
         filename = askopenfilename()
         window.update()
-        if (filename != ()):
+        if (filename != () and filename != ""):
             self.sendFile(filename)
 
     def sendFile(self, filepath):
@@ -242,7 +264,7 @@ class ChatRoom():
             filename_msg = filename[:100]
         else:
             filename_msg = filename + (100 - len(filename)) * '\0'  # padding
-        self.file_srv_skt.send(filename_msg.encode('utf-8'))
+        self.file_srv_skt.send(filename_msg.encode('utf-8')[:100])
         print("File: " + filename_msg)
 
         # filesize (max string size is 10)
