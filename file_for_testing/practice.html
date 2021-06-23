@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>jvs practice</title>
+</head>
+<body>
+
+    <script>
+        var person={
+            name: 'Kinsley',
+            job: 'student',
+            bday: '518',
+            sayname: function(){
+                alert(this.name);
+            }
+        };
+        var count=1;
+        function changge() {
+            if (count % 2) {
+                document.querySelector('#trying').textContent = 'Goodbye, there~';
+            }
+            else{
+                document.querySelector('#trying').textContent = 'Hi, there~';
+            }
+            count++;
+        }
+        window.onload=function(){
+            alert("hi~");
+        }
+    </script>
+    <p id="trying">Hi, there~</p>
+    <input type="button" onclick="changge()" value="click!">
+    <textarea>
+        please input
+    </textarea>
+
+    <div id="outer">
+        outer~
+        <div id="inner">inner~</div>
+    </div>
+</body>
+</html>
