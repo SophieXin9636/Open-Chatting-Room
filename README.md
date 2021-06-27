@@ -1,13 +1,17 @@
-# 網路應用程式設計 Final project - Chatroom
+# Open Chatting Room
 
-## 共同協作者
-B063040059 資工系110級 陳縵欣
-B064011007 資工系110級 徐筱媛
+Network Application Programming <br>
+網路應用程式設計 Final project
+
+## Co-collaborator 共同協作者
+
+B063040059 資工系110級 陳縵欣 SophieXin <br>
+B064011007 資工系110級 徐筱媛 KaielHsu
 
 
 ## System Architecture
 本專案使用的架構為 Client-Server 架構，有多個 client 端與兩個 Server 端，兩個 Server 各司其職，一個為 TCP Server，一個為 UDP Server，其系統架構圖如下：
-![](https://i.imgur.com/ofVAVOF.png)
+<img src="./demo/ofVAVOF.png" style="zoom: 50%;" />
 
 
 ### Client: Users
@@ -52,31 +56,56 @@ B064011007 資工系110級 徐筱媛
     * Latest weather information
     * Real-time Google trend search top 10
 
+## Usage
+* User1
+```
+╭─ ~/Yourpath/client1
+╰─ python3 client.py
+```
+* User2
+```
+╭─ ~/Yourpath/client2
+╰─ python3 client.py
+```
+* User3
+```
+╭─ ~/Yourpath/client3
+╰─ python3 client.py
+```
+* Server
+```
+╭─ ~/Yourpath/server
+╰─ python3 tcp_server.py
+
+╭─ ~/Yourpath/server
+╰─ python3 udp_server.py
+```
+
 ## Demo
 [Demo 影片](https://www.youtube.com/watch?v=Zzy99qyFt9M)
 
 ### Client 端
 * 一開始所執行的畫面
-![](https://i.imgur.com/OlFy4fu.png)
+<img src="./demo/OlFy4fu.png" style="zoom:67%;" />
 
 * 輸入 Sophie 之後
-![](https://i.imgur.com/CiPbvOB.png)
+<img src="./demo/CiPbvOB.png" style="zoom:67%;" />
 
 * 聊天室畫面
-![](https://i.imgur.com/NGg9XRU.png)
+<img src="./demo/NGg9XRU.png" style="zoom:50%;" />
 
 * 輸入天氣
-![](https://i.imgur.com/hsG0qnP.png)
+<img src="./demo/hsG0qnP.png" style="zoom:50%;" />
 
 * 輸入熱門搜尋
-![](https://i.imgur.com/ehyrgXE.png)
+<img src="./demo/ehyrgXE.png" style="zoom:50%;" />
 
 * 傳送貼圖
-![](https://i.imgur.com/6iwgWT9.png)
+<img src="./demo/6iwgWT9.png" style="zoom:50%;" />
 
 * 傳送檔案，其他 users 都會收到檔案
-![](https://i.imgur.com/9wtgKW1.png)
-![](https://i.imgur.com/KixhVmc.png)
+<img src="./demo/9wtgKW1.png" style="zoom: 50%;" />
+<img src="./demo/KixhVmc.png" style="zoom: 50%;" />
 
 
 ## Future Work
