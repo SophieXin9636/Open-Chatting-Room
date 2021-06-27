@@ -1,62 +1,85 @@
-# NAP Final project
+# 網路應用程式設計 Final project - Chatroom
 
-Python - GUI Programming (Tkinter)
-* [教學文件](https://www.tutorialspoint.com/python/python_gui_programming.htm)
-* [參考](https://www.itbook5.com/2019/02/10638/#ttk-widgets)
-
-## 目前問題
-> [time=6.22 14:43]
-傳送圖片之後，圖片會將對話輸入框給覆蓋掉
-
-## 待完成
-* 傳送圖片之後顯示在聊天室上 (貼圖)
-* 貼圖素材
+## 共同協作者
+B063040059 資工系110級 陳縵欣
+B064011007 資工系110級 徐筱媛
 
 
-## chatroom
-https://shengyu7697.github.io/python-chatroom/
-https://shengyu7697.github.io/python-tcp-socket/
-https://iter01.com/562533.html
+## System Architecture
+本專案使用的架構為 Client-Server 架構，有多個 client 端與兩個 Server 端，兩個 Server 各司其職，一個為 TCP Server，一個為 UDP Server，其系統架構圖如下：
+![](https://i.imgur.com/ofVAVOF.png)
 
-## tkinter widget
-Button, Checkbutton, Entry, Frame,Label, LabelFrame, Menubutton, PanedWindow,Radiobutton, Scale, Scrollbar, Spinbox, Combobox, Notebook,Progressbar, Separator, Sizegrip, Treeview
-* Tk(): 建立主視窗
-* Frame(): 建立 Frame
-* Text(): 新增文字輸入框
-	* https://www.delftstack.com/zh-tw/howto/python-tkinter/how-to-get-the-input-from-tkinter-text-box/
-* Button(): 新建按鈕
-* Label(): 訊息框
-	* https://www.tutorialspoint.com/python/tk_label.htm
-* Scrollbar(): 滾輪
-* Listbox(): 列表，若超出邊界會搭配滾輪
-	* https://www.tutorialspoint.com/python/tk_listbox.htm
-* PanedWindow():
-	* https://www.twblogs.net/a/5ca0b67dbd9eee5b1a069ea6
 
-## 架構 (Architecture)
-本專案使用的是 Client-Server 架構，有多個 client 端與兩個 Server 端，兩個 Server 各司其職，一個為 TCP Server，一個為 UDP Server。
-
-### Client
-* interaction flow, window is cleared before entering next phase
+### Client: Users
+* Number of users: one user to multiple users (unlimited)
+* UI Introduction
+    * module: *tkinter*
+    * main objects used: *Frame*, *ScrolledText*, *Entry*, *Button* etc.
+    * structure
+        * top: display chatting/sharing history, including image, emoji display
+        * middle
+            * part1: select file for sharing
+            * part2: built-in emoji
+        * bottom: user input field, logout button
+* interaction flow: window is cleared by using *pack_forget()* function before entering the next phase
 	* login
 	* chatting
 	* logout
-		client's logout action: click logout button, input of "exit" is no longer used
-* message
-	* message time: display only once whenever receiving time is different from last message's different font color of different kind of messages
+		client's logout action: click logout button
+* message: different font colors of different kind of messages
 	* time: gray
+	time will **only** display whenever receiving time is different from last message's
 	* normal message: black
 	* system message: blue
-	* input message class: Entry (used to be Text)
+	* chat bot response: gray(for telling user to wait), pink(for the answer)
+* programming histroy: some method we'd used before
+    * *ScrollBar* and *ListBox*
+    used to be applied in top frame, the main problem is that ListBox don't support image insertion, so *ScrolledText* replace them
+    * *Text*
+    used to be applied in bottom frame, but not so efficient, so *Entry* is used
 
 ### TCP Server: File System
-* 負責傳收檔案 (Undone)
-* 傳送貼圖 (TODO)
-* 傳送音訊 (TODO)
+* File receiving and sending (e.g. doc, pdf, txt, etc)
+* Picture receiving and sending (e.g. jpg, png, gif, etc)
+* Sound receiving and sending (e.g. mp3, wav, etc)
+* Built-in emoji sharing
+    while this function uses the *Button* objects, png is only applied
 
 
-### UDP Server
-* 負責傳收、廣播訊息
-* 天氣現況
-* 熱門搜尋 (排名前十)
+### UDP Server: Chatroom and chatbot
+* Message receiving, sending and broadcasting
+* Chat robot detects keywords and responses
+    * Latest weather information
+    * Real-time Google trend search top 10
 
+## Demo
+[Demo 影片](https://www.youtube.com/watch?v=Zzy99qyFt9M)
+
+### Client 端
+* 一開始所執行的畫面
+![](https://i.imgur.com/OlFy4fu.png)
+
+* 輸入 Sophie 之後
+![](https://i.imgur.com/CiPbvOB.png)
+
+* 聊天室畫面
+![](https://i.imgur.com/NGg9XRU.png)
+
+* 輸入天氣
+![](https://i.imgur.com/hsG0qnP.png)
+
+* 輸入熱門搜尋
+![](https://i.imgur.com/ehyrgXE.png)
+
+* 傳送貼圖
+![](https://i.imgur.com/6iwgWT9.png)
+
+* 傳送檔案，其他 users 都會收到檔案
+![](https://i.imgur.com/9wtgKW1.png)
+![](https://i.imgur.com/KixhVmc.png)
+
+
+## Future Work
+### Client GUI
+* Music player
+	*Pygame* seems to be a better choice, while *playsound* module doesn't support those files with any Chinese character(utf-8 coding needed) in file name.
