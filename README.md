@@ -5,8 +5,8 @@ Network Application Programming <br>
 
 ## Co-collaborator 共同協作者
 
-B063040059 資工系110級 陳縵欣 SophieXin <br>
-B064011007 資工系110級 徐筱媛 KaielHsu
+SophieXin <br>
+KaielHsu
 
 
 ## System Architecture
